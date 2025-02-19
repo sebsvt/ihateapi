@@ -10,7 +10,7 @@ import (
 type unidocAdapter struct {
 }
 
-func NewUnidocAdapter() port.PDFPort {
+func NewPDFUnidocAdapter() port.PDFPort {
 	return &unidocAdapter{}
 }
 
