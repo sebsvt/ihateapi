@@ -67,34 +67,4 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// uuid := uuid.New().String()
-	// err = fileStorageRepository.Upload("ihateapi", uuid+".pdf", file)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// has, err := fileStorageRepository.ObjectExists("ihateapi", uuid+".pdf")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(has)
-
-	// has, err = fileStorageRepository.ObjectExists("ihateapi", uuid+"x.pdf")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(has)
-
-	// // file, err = fileStorageRepository.Download("ihateapi", uuid+".pdf")
-	// // if err != nil {
-	// // 	log.Fatal(err)
-	// // }
-
-	// // fmt.Println(len(file))
-	// // // write the file
-	// // err = os.WriteFile("./assets/file1_downloaded.pdf", file, 0644)
-	// // if err != nil {
-	// // 	log.Fatal(err)
-	// // }
-
 }

@@ -80,9 +80,71 @@ func (srv *workflowService) Process(req model.ProcessWorkFlowRequest) (*model.Pr
 			Timer:            "0.090",
 		}, nil
 	case "split":
+		var file []byte
+		// read the file from storage
+		file, err := srv.fileStorage.Download("ihateapi", req.Files[0].ServerFilename)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		// split the file
+		splitFiles, err := srv.pdfService.Split(file)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		// upload the split files to storage
+		for _, file := range splitFiles {
+			uuid := uuid.New().String()
+			err = srv.fileStorage.Upload("ihateapi", uuid+".pdf", file)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+		}
+		// create a zip file
+		// zipFile, err := srv.pdfService.CreateZip(splitFiles)
+		// if err != nil {
+		// 	log.Println(err)
+		// 	return nil, err
+		// }
+		return &model.ProcessWorkFlowResponse{
+			DownloadFilename: "output.zip",
+			FileSize:         10,
+			OutputFileSize:   10,
+			OutputFileNumber: 10,
+			OutputExtentions: "[\"pdf\"]",
+			Timer:            "0.090",
+			Status:           "TaskSuccess",
+		}, nil
 		// do nothing now
 	case "compress":
-		// do nothing now
+		// read the file from storage
+		file, err := srv.fileStorage.Download("ihateapi", req.Files[0].ServerFilename)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		// compress the file
+		compressedFile, err := srv.pdfService.Compress(file)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		// upload the compressed file to storage
+		err = srv.fileStorage.Upload("ihateapi", "compressed.pdf", compressedFile)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		return &model.ProcessWorkFlowResponse{
+			DownloadFilename: "compressed.pdf",
+			FileSize:         len(compressedFile),
+			OutputFileSize:   10,
+			OutputFileNumber: len(compressedFile),
+			OutputExtentions: "[\"pdf\"]",
+			Timer:            "0.090",
+		}, nil
 	case "pdfocr":
 		// do nothing now
 	case "pdfjpg":
