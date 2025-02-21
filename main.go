@@ -1,27 +1,100 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/sebsvt/ihateapi/handler"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/sebsvt/ihateapi/model"
+	"github.com/sebsvt/ihateapi/repository"
 	"github.com/sebsvt/ihateapi/service"
 )
 
 func main() {
-	app := fiber.New()
-	api := app.Group("/api")
-	apiv1 := api.Group("/v1")
+	pdfService := service.NewPdfService()
+	fileStorageRepository := repository.NewFileStorageRepositoryMock()
+	workflowService := service.NewWorkflowService(pdfService, fileStorageRepository)
 
-	// services
-	workflowService := service.NewWorkflowService()
+	// read the file
+	file, err := os.ReadFile("./assets/file1.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// handlers
-	workflowHandler := handler.NewWorkflowHandler(workflowService)
+	file2, err := os.ReadFile("./assets/file2.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	apiv1.Get("/start/:tool", workflowHandler.Start)
-	apiv1.Post("/upload", workflowHandler.Upload)
-	apiv1.Post("/process", workflowHandler.Process)
-	apiv1.Get("/download/:task", workflowHandler.Download)
+	res, err := workflowService.Upload(file)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// routes
-	app.Listen(":8000")
+	res2, err := workflowService.Upload(file2)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("server filename: ", res.ServerFilename)
+
+	res3, err := workflowService.Process(model.ProcessWorkFlowRequest{
+		Tool: "merge",
+		Files: []model.File{
+			{
+				ServerFilename: res.ServerFilename,
+			},
+			{
+				ServerFilename: res2.ServerFilename,
+			},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("download filename: ", res3.DownloadFilename)
+
+	mergedfile, err := fileStorageRepository.Download("ihateapi", res3.DownloadFilename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("merged file size: ", len(mergedfile))
+	// write the file
+	err = os.WriteFile("./assets/mergedfile.pdf", mergedfile, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// uuid := uuid.New().String()
+	// err = fileStorageRepository.Upload("ihateapi", uuid+".pdf", file)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// has, err := fileStorageRepository.ObjectExists("ihateapi", uuid+".pdf")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println(has)
+
+	// has, err = fileStorageRepository.ObjectExists("ihateapi", uuid+"x.pdf")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println(has)
+
+	// // file, err = fileStorageRepository.Download("ihateapi", uuid+".pdf")
+	// // if err != nil {
+	// // 	log.Fatal(err)
+	// // }
+
+	// // fmt.Println(len(file))
+	// // // write the file
+	// // err = os.WriteFile("./assets/file1_downloaded.pdf", file, 0644)
+	// // if err != nil {
+	// // 	log.Fatal(err)
+	// // }
+
 }

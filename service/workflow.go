@@ -12,7 +12,7 @@ var (
 
 type WorkflowService interface {
 	Start(tool string) (*model.StartWorkFlowResponse, error)
-	Upload() (*model.UploadWorkFlowResponse, error)
+	Upload(file []byte) (*model.UploadWorkFlowResponse, error)
 	Process(req model.ProcessWorkFlowRequest) (*model.ProcessWorkFlowResponse, error)
 	Download(task string) ([]byte, error)
 }

@@ -1,15 +1,23 @@
 package service
 
 import (
+	"log"
+
 	"github.com/google/uuid"
 	"github.com/sebsvt/ihateapi/model"
+	"github.com/sebsvt/ihateapi/repository"
 )
 
 type workflowService struct {
+	pdfService  PdfService
+	fileStorage repository.FileStorageRepository
 }
 
-func NewWorkflowService() WorkflowService {
-	return &workflowService{}
+func NewWorkflowService(pdfService PdfService, fileStorage repository.FileStorageRepository) WorkflowService {
+	return &workflowService{
+		pdfService:  pdfService,
+		fileStorage: fileStorage,
+	}
 }
 
 // Start implements WorkflowService.
@@ -23,8 +31,13 @@ func (srv *workflowService) Start(tool string) (*model.StartWorkFlowResponse, er
 }
 
 // Upload implements WorkflowService.
-func (srv *workflowService) Upload() (*model.UploadWorkFlowResponse, error) {
+func (srv *workflowService) Upload(file []byte) (*model.UploadWorkFlowResponse, error) {
 	uuid := uuid.New().String()
+	err := srv.fileStorage.Upload("ihateapi", uuid+".pdf", file)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	return &model.UploadWorkFlowResponse{
 		ServerFilename: uuid + ".pdf",
 	}, nil
@@ -35,7 +48,37 @@ func (srv *workflowService) Process(req model.ProcessWorkFlowRequest) (*model.Pr
 	switch req.Tool {
 	// For pdf
 	case "merge":
-		// do nothing now
+		var files [][]byte
+		// read the files from storage
+		for _, file := range req.Files {
+			fileBytes, err := srv.fileStorage.Download("ihateapi", file.ServerFilename)
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			files = append(files, fileBytes)
+		}
+		mergedFile, err := srv.pdfService.Merge(files)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		// generate a uuid for the merged file
+		mergedFileUUID := uuid.New().String()
+		// upload the merged file to storage
+		err = srv.fileStorage.Upload("ihateapi", mergedFileUUID+".pdf", mergedFile)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		return &model.ProcessWorkFlowResponse{
+			DownloadFilename: mergedFileUUID + ".pdf",
+			FileSize:         len(mergedFile),
+			OutputFileSize:   10,
+			OutputFileNumber: len(mergedFile),
+			OutputExtentions: "[\"pdf\"]",
+			Timer:            "0.090",
+		}, nil
 	case "split":
 		// do nothing now
 	case "compress":
