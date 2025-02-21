@@ -67,4 +67,30 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Compress the file
+	res4, err := workflowService.Process(model.ProcessWorkFlowRequest{
+		Tool: "compress",
+		Files: []model.File{
+			{
+				ServerFilename: res3.DownloadFilename,
+			},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("download filename: ", res4.DownloadFilename)
+
+	compressedfile, err := fileStorageRepository.Download("ihateapi", res4.DownloadFilename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// write the file
+	err = os.WriteFile("./assets/compressedfile.pdf", compressedfile, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
